@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta content="width=device-width, initial-scale=1" name="viewport">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<title></title>
+  <style>figcaption{text-shadow: 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000, 0px 0px 10px #000000; font-size:1.25em !important; position: absolute; bottom: 0; width: 100%; background: rgba(0, 0, 0, 0.25); color: white !important;}
+  .figure-img{background:#e9ecef;}</style>
+</head>
+<body>
+    <div class="container mt-3">
+	<div class="row" id="frames"></div>
+</div>
+<script src="frames.js"></script>
+<script>
+// Images are loaded by a small queue instead of the browser's native lazy loading:
+//  - an image is only queued once its figure is within LOOKAHEAD of the viewport
+//  - queued images load lowest-index first, at most MAX_CONCURRENT at a time
+// Every <img> has explicit width/height (plus aspect-ratio) so each figure reserves
+// its space before its image arrives and the page height is correct from the start.
+const LOOKAHEAD = "1000px 0px";
+const MAX_CONCURRENT = 4;
+const DEBUG = false;
+
+const t0 = performance.now();
+function dbg(...args) {
+	if (DEBUG) console.log("[storyboard +" + Math.round(performance.now() - t0) + "ms]", ...args);
+}
+
+if (typeof TITLE === "string") document.title = TITLE;
+
+const grid = document.getElementById("frames");
+const fragment = document.createDocumentFragment();
+const imgs = [];
+
+FRAMES.forEach((frame, index) => {
+	const col = document.createElement("div");
+	col.className = "col-md-4";
+
+	const figure = document.createElement("figure");
+	figure.className = "figure";
+	figure.style.position = "relative";
+
+	const img = document.createElement("img");
+	img.className = "figure-img img-fluid rounded mb-0";
+	img.alt = "";
+	img.width = frame.width;
+	img.height = frame.height;
+	img.style.aspectRatio = frame.width + " / " + frame.height;
+	img.decoding = "async";
+	img.dataset.index = index;
+	img.dataset.src = frame.image;
+	imgs.push(img);
+
+	const figcaption = document.createElement("figcaption");
+	figcaption.className = "figure-caption text-center rounded pb-1";
+	figcaption.textContent = frame.caption;
+
+	figure.append(img, figcaption);
+	col.appendChild(figure);
+	fragment.appendChild(col);
+});
+
+grid.appendChild(fragment);
+
+dbg("frames:", FRAMES.length, "| viewport:", window.innerWidth + "x" + window.innerHeight,
+	"| devicePixelRatio:", window.devicePixelRatio, "| lookahead:", LOOKAHEAD, "| max concurrent:", MAX_CONCURRENT);
+
+// Layout check: if the figures reserved their space, the page is tall and no <img> is 0px high.
+// If most are 0px high they would all count as "in view" and all be queued at once.
+requestAnimationFrame(() => {
+	const zeroHeight = imgs.filter((img) => img.offsetHeight === 0).length;
+	const first = imgs[0];
+	dbg("layout: document height", document.documentElement.scrollHeight + "px",
+		"| first img rendered", first.offsetWidth + "x" + first.offsetHeight,
+		"(attrs " + first.getAttribute("width") + "x" + first.getAttribute("height") + ")",
+		"| imgs with 0 height:", zeroHeight + "/" + imgs.length);
+});
+
+const pending = [];
+let active = 0;
+let loaded = 0;
+let failed = 0;
+
+function pump() {
+	while (active < MAX_CONCURRENT && pending.length > 0) {
+		// take the lowest-index queued image so loading goes top to bottom
+		pending.sort((a, b) => a.dataset.index - b.dataset.index);
+		const img = pending.shift();
+		active++;
+		const started = performance.now();
+		const index = img.dataset.index;
+		dbg("start #" + index, img.dataset.src, "| active:", active, "| still queued:", pending.length);
+		img.addEventListener("load", () => {
+			loaded++;
+			dbg("loaded #" + index, Math.round(performance.now() - started) + "ms",
+				"natural " + img.naturalWidth + "x" + img.naturalHeight,
+				"| loaded:", loaded + "/" + imgs.length);
+			active--;
+			pump();
+		}, { once: true });
+		img.addEventListener("error", () => {
+			failed++;
+			console.error("[storyboard] FAILED #" + index, img.dataset.src);
+			active--;
+			pump();
+		}, { once: true });
+		img.src = img.dataset.src;
+	}
+	if (active === 0 && pending.length === 0) {
+		dbg("queue idle | loaded:", loaded, "| failed:", failed, "| not yet requested:", imgs.length - loaded - failed);
+	}
+}
+
+const observer = new IntersectionObserver((entries) => {
+	const entered = entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target.dataset.index);
+	if (entered.length > 0) dbg("entered lookahead zone:", entered.join(", "), "| scrollY:", Math.round(window.scrollY));
+	entries.forEach((entry) => {
+		if (entry.isIntersecting) {
+			observer.unobserve(entry.target);
+			pending.push(entry.target);
+		}
+	});
+	pump();
+}, { rootMargin: LOOKAHEAD });
+
+imgs.forEach((img) => observer.observe(img));
+
+window.addEventListener("load", () => {
+	const requested = performance.getEntriesByType("resource").filter((entry) => /\.(jpg|webp)(\?|$)/.test(entry.name)).length;
+	dbg("window load | image requests made by the browser so far:", requested);
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  </body>
+</html>

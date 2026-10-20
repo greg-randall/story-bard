@@ -1,0 +1,4 @@
+webvtt-py
+opencv-python
+pillow
+tqdm
