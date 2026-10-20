@@ -68,12 +68,15 @@ vtt = webvtt.read(sub_file)
 
 # Create a dictionary with the start time as the key and the text as the value.
 subtitles = defaultdict(list)
+previous_lines = set()
 for caption in vtt:
-    text=caption.text
-    split_text=text.split(f"\n")
-    for split in split_text:
-        if split.strip() != "":
-            subtitles[caption.start] = split.strip()
+    lines = [line.strip() for line in caption.text.split("\n") if line.strip() != ""]
+    # YouTube's rolling captions repeat the previous cue's last line as the first line of the next cue,
+    # so lines the previous cue already showed are dropped. Every other line is kept.
+    new_lines = [line for line in lines if line not in previous_lines]
+    if new_lines:
+        subtitles[caption.start] = " ".join(new_lines)
+    previous_lines = set(lines)
 
 
 # Remove duplicate entries
