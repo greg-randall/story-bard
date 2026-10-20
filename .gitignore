@@ -11,7 +11,18 @@ index.html
 # Test output folders
 test-*/
 
+# Sample inputs (third-party video and captions)
+/sample/
+tears_of_steel_input/
+
 # Source videos
 *.webm
 *.mp4
 *.mkv
+
+# Published demo (generated from Tears of Steel, CC BY 3.0, Blender Foundation) and README screenshot
+!docs/screenshot.jpg
+!docs/sample/*.webp
+!docs/sample/frames.js
+!docs/sample/index.html
+docs/sample/*.vtt

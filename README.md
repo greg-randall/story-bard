@@ -2,6 +2,10 @@
 
 Turns a video and its captions into a storyboard web page: one frame per caption, with the caption text overlaid.
 
+![A storyboard made from Tears of Steel](docs/screenshot.jpg)
+
+*Sample output made from the English subtitles of Tears of Steel. The generated page is in [docs/sample](docs/sample). Tears of Steel (c) Blender Foundation | [mango.blender.org](https://mango.blender.org), licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).*
+
 ## Install
 
 ```
