@@ -22,6 +22,7 @@ tears_of_steel_input/
 
 # Published demo (generated from Tears of Steel, CC BY 3.0, Blender Foundation) and README screenshot
 !docs/screenshot.jpg
+!docs/index.html
 !docs/sample/*.webp
 !docs/sample/frames.js
 !docs/sample/index.html

@@ -1,6 +1,6 @@
 # story-bard
 
-Turns a video and its captions into a storyboard web page: one frame per caption, with the caption text overlaid.
+Turns a video and its captions into a storyboard page ([live demo](https://greg-randall.github.io/story-bard/sample/)): one frame per caption, with the caption text overlaid.
 
 ![A storyboard made from Tears of Steel](docs/screenshot.jpg)
 
